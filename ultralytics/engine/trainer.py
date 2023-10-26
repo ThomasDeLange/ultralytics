@@ -17,12 +17,14 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from PIL.Image import Image
+from thesis_main.support_functions.plotting import show_image
+from thesis_main.support_functions.attacks import fgsm_attack
 from torch import distributed as dist
 from torch import nn, optim
 from torch.cuda import amp
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-from thesis_main.support.plotting import show_image
 from ultralytics.cfg import get_cfg, get_save_dir
 from ultralytics.data.utils import check_cls_dataset, check_det_dataset
 from ultralytics.nn.tasks import attempt_load_one_weight, attempt_load_weights
@@ -34,10 +36,8 @@ from ultralytics.utils.dist import ddp_cleanup, generate_ddp_command
 from ultralytics.utils.files import get_latest_run
 from ultralytics.utils.torch_utils import (EarlyStopping, ModelEMA, de_parallel, init_seeds, one_cycle, select_device,
                                            strip_optimizer)
-from PIL import Image
 
-from thesis_main.support_functions.attacks import fgsm_attack
-from ultralytics.ultralytics.nn import SegmentationModel
+from ultralytics.nn import SegmentationModel
 
 
 class BaseTrainer:
@@ -363,7 +363,7 @@ class BaseTrainer:
 
                             if func == "ae":
                                 self.scaler.scale(self.loss).backward()
-                                self.loss.backward()
+                                # self.loss.backward()
 
                                 # Extra - Collect ``datagrad``
                                 data_grad = batch['img'].grad.data
@@ -401,7 +401,7 @@ class BaseTrainer:
                                 im = Image.fromarray(im_array)  # RGB PIL image
                                 # show_image(im, title=f"Adversarial-{epsilon}", path="/Users/thomas/Documents/School/TU:e/1. Master/Year 3/Graduation/Preparation Phase/Showcase/adv_3")
                                 show_image(im, title=f"Noise-{mean}-{std}",
-                                           path="/Users/thomas/Documents/School/TU:e/1. Master/Year 3/Graduation/Preparation Phase/Showcase/noise_1")
+                                           path="/home/thomas/thesis-project/thesis-main/thesis_main/showcase/test")
 
                 # Optimize - https://pytorch.org/docs/master/notes/amp_examples.html
                 if ni - last_opt_step >= self.accumulate:
