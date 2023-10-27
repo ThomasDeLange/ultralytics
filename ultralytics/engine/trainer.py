@@ -143,6 +143,9 @@ class BaseTrainer:
         self.csv = self.save_dir / 'results.csv'
         self.plot_idx = [0, 1, 2]
 
+        self.batch = object
+        self.batch_number = 0
+
         # Callbacks
         self.callbacks = _callbacks or callbacks.get_default_callbacks()
         if RANK in (-1, 0):
@@ -349,20 +352,20 @@ class BaseTrainer:
                 with torch.cuda.amp.autocast(self.amp):
                     batch = self.preprocess_batch(batch)
                     batch['img'].requires_grad = True
-
-                    # Add for callback
-                    self.batch = batch
+                    # batch['img'].retain_graph = True
 
                     self.loss, self.loss_items = self.model(batch)
 
-                    model.zero_grad()
-                    self.model.zero_grad()
+                    # model.zero_grad()
+                    # self.model.zero_grad()
                     # if RANK != -1:
                     #     self.loss *= world_size
                     self.tloss = (self.tloss * i + self.loss_items) / (i + 1) if self.tloss is not None \
                         else self.loss_items
 
                     # Add actual callback
+                    self.batch = batch
+
                     self.run_callbacks('during_training')
 
                 # Backward
