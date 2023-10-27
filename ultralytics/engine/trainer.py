@@ -350,6 +350,9 @@ class BaseTrainer:
                     batch = self.preprocess_batch(batch)
                     batch['img'].requires_grad = True
 
+                    # Add for callback
+                    self.batch = batch
+
                     self.loss, self.loss_items = self.model(batch)
 
                     model.zero_grad()
@@ -359,60 +362,11 @@ class BaseTrainer:
                     self.tloss = (self.tloss * i + self.loss_items) / (i + 1) if self.tloss is not None \
                         else self.loss_items
 
-                    func = "ae"
-                    print("loopie")
-                    if func == "ae":
-                        print(func)
-                        self.scaler.scale(self.loss).backward()
-                        # self.loss.backward()
+                    # Add actual callback
+                    self.run_callbacks('during_training')
 
-                        # Extra - Collect ``datagrad``
-                        data_grad = batch['img'].grad.data
-
-                        # Restore the data to its original scale
-                        # data_denorm = denorm(batch['img'], mean=[0.5], std=[0.5])
-                        data_grad_denorm = torch.clamp(batch['img'], min=0, max=1)
-
-                        epsilon = 0.001
-                        # Extra - Call FGSM Attack
-                        perturbed_data = fgsm_attack(data_grad_denorm, epsilon, data_grad)
-
-                        # Reapply normalization
-                        # perturbed_data_normalized = transforms.Normalize((0,), (0.5,))(perturbed_data)
-                        perturbed_data_normalized = torch.clamp(perturbed_data, min=0, max=1)
-                        prediction = model.predict(perturbed_data_normalized)
-
-                        for r in prediction:
-                            im_array = r.plot(labels=False, probs=False, masks=True,
-                                              boxes=False)  # plot a BGR numpy array of predictions
-                            im = Image.fromarray(im_array)  # RGB PIL image
-                            # show_image(im, title=f"Adversarial-{epsilon}", path="/Users/thomas/Documents/School/TU:e/1. Master/Year 3/Graduation/Preparation Phase/Showcase/adv_3")
-                            show_image(im, title=f"Adv-{epsilon}",
-                                       path="/home/thomas/thesis-project/thesis-main/thesis_main/showcase/")
-                    else:
-                        print("else")
-                        mean = -0.4
-                        std = 0.02
-
-                        data_denorm = torch.clamp(batch['img'], min=0, max=1)
-
-                        # Create a tensor of the same size as the original tensor with random noise
-                        noise = torch.tensor(np.random.normal(mean, std, data_denorm.size()), dtype=torch.float)
-
-                        # Add the noise to the original tensor
-                        perturbed_data = data_denorm + noise
-                        perturbed_data_normalized = torch.clamp(perturbed_data, min=0, max=1)
-
-                        prediction = model.predict(perturbed_data_normalized)
-
-                        for r in prediction:
-                            im_array = r.plot(labels=False, probs=False, masks=True,
-                                              boxes=False)  # plot a BGR numpy array of predictions
-                            im = Image.fromarray(im_array)  # RGB PIL image
-                            # show_image(im, title=f"Adversarial-{epsilon}", path="/Users/thomas/Documents/School/TU:e/1. Master/Year 3/Graduation/Preparation Phase/Showcase/adv_3")
-                            show_image(im, title=f"Noise-{mean}-{std}",
-                                       path="../showcase/noise_1")
-
+                # Backward
+                self.scaler.scale(self.loss).backward()
 
                 # Optimize - https://pytorch.org/docs/master/notes/amp_examples.html
                 if ni - last_opt_step >= self.accumulate:

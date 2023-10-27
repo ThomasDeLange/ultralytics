@@ -21,6 +21,9 @@ def on_train_start(trainer):
     """Called when the training starts."""
     pass
 
+def during_training(trainer):
+    """Custom - Called during training."""
+    pass
 
 def on_train_epoch_start(trainer):
     """Called at the start of each training epoch."""
@@ -146,6 +149,7 @@ default_callbacks = {
     'on_pretrain_routine_start': [on_pretrain_routine_start],
     'on_pretrain_routine_end': [on_pretrain_routine_end],
     'on_train_start': [on_train_start],
+    'during_training': [during_training],
     'on_train_epoch_start': [on_train_epoch_start],
     'on_train_batch_start': [on_train_batch_start],
     'optimizer_step': [optimizer_step],
