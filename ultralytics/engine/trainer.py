@@ -9,6 +9,7 @@ Usage:
 import math
 import os
 import subprocess
+import sys
 import time
 import warnings
 from copy import deepcopy
@@ -17,10 +18,8 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from PIL import Image
-from thesis_main.support_functions.plotting import show_image
-from thesis_main.support_functions.attacks import fgsm_attack
-from torch import distributed as dist
+from pytorch_memlab import profile, profile_every
+from torch import distributed as dist, Tensor
 from torch import nn, optim
 from torch.cuda import amp
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -292,6 +291,7 @@ class BaseTrainer:
         self.scheduler.last_epoch = self.start_epoch - 1  # do not move
         self.run_callbacks('on_pretrain_routine_end')
 
+    @profile_every(1)
     def _do_train(self, model: "SegmentationModel", world_size=1):
         """Train completed, evaluate and plot if specified by arguments."""
         if world_size > 1:
@@ -351,25 +351,22 @@ class BaseTrainer:
                 # Forward
                 with torch.cuda.amp.autocast(self.amp):
                     batch = self.preprocess_batch(batch)
-                    batch['img'].requires_grad = True
-                    # batch['img'].retain_graph = True
-
-                    self.loss, self.loss_items = self.model(batch)
-
-                    # model.zero_grad()
-                    # self.model.zero_grad()
-                    # if RANK != -1:
-                    #     self.loss *= world_size
-                    self.tloss = (self.tloss * i + self.loss_items) / (i + 1) if self.tloss is not None \
-                        else self.loss_items
 
                     # Add actual callback
-                    self.batch = batch
+                    self.batch:Tensor = batch
 
                     self.run_callbacks('during_training')
 
+                    batch = self.batch
+                    # Not relevant for now
+                    if RANK != -1:
+                        self.loss *= world_size
+                    self.tloss = (self.tloss * i + self.loss_items) / (i + 1) if self.tloss is not None \
+                        else self.loss_items
+
                 # Backward
-                self.scaler.scale(self.loss).backward()
+                # Already done in callback
+                # self.scaler.scale(self.loss).backward()
 
                 # Optimize - https://pytorch.org/docs/master/notes/amp_examples.html
                 if ni - last_opt_step >= self.accumulate:

@@ -280,8 +280,9 @@ class v8SegmentationLoss(v8DetectionLoss):
         loss[1] *= self.hyp.box  # seg gain
         loss[2] *= self.hyp.cls  # cls gain
         loss[3] *= self.hyp.dfl  # dfl gain
+        # loss[2] = loss[2].sum() * batch_size
 
-        return loss.sum() * batch_size, loss.detach()  # loss(box, cls, dfl)
+        return loss.sum() * batch_size, loss  # loss(box, cls, dfl) .detach()
 
     @staticmethod
     def single_mask_loss(gt_mask: torch.Tensor, pred: torch.Tensor, proto: torch.Tensor, xyxy: torch.Tensor,
