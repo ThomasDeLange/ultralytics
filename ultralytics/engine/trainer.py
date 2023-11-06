@@ -291,7 +291,6 @@ class BaseTrainer:
         self.scheduler.last_epoch = self.start_epoch - 1  # do not move
         self.run_callbacks('on_pretrain_routine_end')
 
-    @profile_every(1)
     def _do_train(self, model: "SegmentationModel", world_size=1):
         """Train completed, evaluate and plot if specified by arguments."""
         if world_size > 1:
