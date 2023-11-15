@@ -224,7 +224,7 @@ class Model(nn.Module):
             x in sys.argv for x in ('predict', 'track', 'mode=predict', 'mode=track'))
 
         # Change - conf from 0.25 to 0.75
-        custom = {'conf': 0.75, 'save': is_cli}  # method defaults
+        custom = {'conf': 0.25, 'save': is_cli}  # method defaults
 
         args = {**self.overrides, **custom, **kwargs, 'mode': 'predict'}  # highest priority args on the right
         prompts = args.pop('prompts', None)  # for SAM-type models

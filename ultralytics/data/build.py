@@ -31,7 +31,7 @@ class InfiniteDataLoader(dataloader.DataLoader):
         super().__init__(*args, **kwargs)
 
         # Change - remove sampler
-        # object.__setattr__(self, 'batch_sampler', _RepeatSampler(self.batch_sampler))
+        object.__setattr__(self, 'batch_sampler', _RepeatSampler(self.batch_sampler))
         self.iterator = super().__iter__()
 
     def __len__(self):
@@ -105,8 +105,8 @@ def build_dataloader(dataset, batch, workers, shuffle=True, rank=-1):
     nw = min([os.cpu_count() // max(nd, 1), batch if batch > 1 else 0, workers])  # number of workers
 
     # Change - set sampler to None
-    # sampler = None if rank == -1 else distributed.DistributedSampler(dataset, shuffle=shuffle)
-    sampler = None
+    # sampler = None
+    sampler = None if rank == -1 else distributed.DistributedSampler(dataset, shuffle=shuffle)
     generator = torch.Generator()
     generator.manual_seed(6148914691236517205 + RANK)
     return InfiniteDataLoader(dataset=dataset,

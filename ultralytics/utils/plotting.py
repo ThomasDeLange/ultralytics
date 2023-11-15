@@ -37,6 +37,7 @@ class Colors:
         # hexs = ('FF3838', 'FF9D97', 'FF701F', 'FFB21D', 'CFD231', '48F90A', '92CC17', '3DDB86', '1A9334', '00D4BB',
         #         '2C99A8', '00C2FF', '344593', '6473FF', '0018EC', '8438FF', '520085', 'CB38FF', 'FF95C8', 'FF37C7')
 
+        # Change - use plotly colors instad of defaults
         hexs = px.colors.qualitative.Plotly
         hexs = [j for i, j in enumerate(hexs) if i not in [2, 7]]
 
@@ -384,7 +385,9 @@ def plot_images(images,
     if isinstance(images, torch.Tensor):
 
         # Change - add .detach()
-        images = images.detach().cpu().float().numpy()
+        # images = images.detach().cpu().float().numpy()
+        images = images.cpu().float().numpy()
+
     if isinstance(cls, torch.Tensor):
         cls = cls.cpu().numpy()
     if isinstance(bboxes, torch.Tensor):
@@ -688,7 +691,8 @@ def feature_visualization(x, module_type, stage, n=32, save_dir=Path('runs/detec
         plt.subplots_adjust(wspace=0.05, hspace=0.05)
         for i in range(n):
             # Change - add .detach().numpy()
-            ax[i].imshow(blocks[i].squeeze().detach().numpy())  # cmap='gray'
+            # ax[i].imshow(blocks[i].squeeze().detach().numpy())  # cmap='gray'
+            ax[i].imshow(blocks[i].squeeze())  # cmap='gray'
 
             ax[i].axis('off')
 
