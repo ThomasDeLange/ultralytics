@@ -18,7 +18,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from pytorch_memlab import profile, profile_every
 from torch import distributed as dist, Tensor
 from torch import nn, optim
 
@@ -341,25 +340,37 @@ class BaseTrainer:
                         if 'momentum' in x:
                             x['momentum'] = np.interp(ni, xi, [self.args.warmup_momentum, self.args.momentum])
 
+                # Callback
+                # # Forward
+                # with torch.cuda.amp.autocast(self.amp):
+                #     batch = self.preprocess_batch(batch)
+                #
+                #     # Add actual callback
+                #     self.batch:Tensor = batch
+                #     self.run_callbacks('during_training')
+                #     batch = self.batch
+                #
+                #     # Run model with updated batch
+                #     self.loss, self.loss_items = self.model(batch)
+                #
+                #     if RANK != -1:
+                #         self.loss *= world_size
+                #     self.tloss = (self.tloss * i + self.loss_items) / (i + 1) if self.tloss is not None \
+                #         else self.loss_items
+
+
+                # Original
                 # Forward
                 with torch.cuda.amp.autocast(self.amp):
                     batch = self.preprocess_batch(batch)
-
-                    # Add actual callback
-                    self.batch:Tensor = batch
-
-                    self.run_callbacks('during_training')
-
-                    batch = self.batch
-                    # Not relevant for now
+                    self.loss, self.loss_items = self.model(batch)
                     if RANK != -1:
                         self.loss *= world_size
                     self.tloss = (self.tloss * i + self.loss_items) / (i + 1) if self.tloss is not None \
                         else self.loss_items
 
                 # Backward
-                # Already done in callback
-                # self.scaler.scale(self.loss).backward()
+                self.scaler.scale(self.loss).backward()
 
                 # Optimize - https://pytorch.org/docs/master/notes/amp_examples.html
                 if ni - last_opt_step >= self.accumulate:
