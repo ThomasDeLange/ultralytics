@@ -139,7 +139,7 @@ class BaseTrainer:
         self.csv = self.save_dir / 'results.csv'
         self.plot_idx = [0, 1, 2]
 
-        self.batch = object
+        self.batch: Tensor
         self.batch_number = 0
 
         # Callbacks
