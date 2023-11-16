@@ -349,6 +349,8 @@ class BaseTrainer:
                     # Add actual callback
                     self.batch:Tensor = batch
                     self.run_callbacks('during_training')
+                    sys.exit(0)
+
                     batch = self.batch
 
                     # Run model with updated batch
