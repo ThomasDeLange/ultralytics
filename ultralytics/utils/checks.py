@@ -135,24 +135,23 @@ def check_imgsz(imgsz, stride=32, min_dim=1, max_dim=2, floor=0):
 
 def check_version(current: str = '0.0.0',
                   required: str = '0.0.0',
-                  name: str = 'version',
+                  name: str = 'version ',
                   hard: bool = False,
                   verbose: bool = False) -> bool:
     """
     Check current version against the required version or range.
 
     Args:
-        current (str): Current version or package name to get version from.
+        current (str): Current version.
         required (str): Required version or range (in pip-style format).
-        name (str, optional): Name to be used in warning message.
-        hard (bool, optional): If True, raise an AssertionError if the requirement is not met.
-        verbose (bool, optional): If True, print warning message if requirement is not met.
+        name (str): Name to be used in warning message.
+        hard (bool): If True, raise an AssertionError if the requirement is not met.
+        verbose (bool): If True, print warning message if requirement is not met.
 
     Returns:
         (bool): True if requirement is met, False otherwise.
 
     Example:
-        ```python
         # check if current version is exactly 22.04
         check_version(current='22.04', required='==22.04')
 
@@ -164,40 +163,31 @@ def check_version(current: str = '0.0.0',
 
         # check if current version is between 20.04 (inclusive) and 22.04 (exclusive)
         check_version(current='21.10', required='>20.04,<22.04')
-        ```
     """
     if not current:  # if current is '' or None
         LOGGER.warning(f'WARNING ⚠️ invalid check_version({current}, {required}) requested, please check values.')
         return True
-    elif not current[0].isdigit():  # current is package name rather than version string, i.e. current='ultralytics'
-        try:
-            name = current  # assigned package name to 'name' arg
-            current = version(current)  # get version string from package name
-        except PackageNotFoundError:
-            if hard:
-                raise ModuleNotFoundError(emojis(f'WARNING ⚠️ {current} package is required but not installed'))
-            else:
-                return False
 
     if not required:  # if required is '' or None
         return True
 
+    current = parse_version(current)  # '1.2.3' -> (1, 2, 3)
+    constraints = re.findall(r'([<>!=]{1,2}\s*\d+\.\d+)', required) or [f'>={required}']
     result = True
-    c = parse_version(current)  # '1.2.3' -> (1, 2, 3)
-    for r in required.strip(',').split(','):
-        op, v = re.match(r'([^0-9]*)([\d.]+)', r).groups()  # split '>=22.04' -> ('>=', '22.04')
+    for constraint in constraints:
+        op, v = re.match(r'([<>!=]{1,2})\s*(\d+\.\d+)', constraint).groups()
         v = parse_version(v)  # '1.2.3' -> (1, 2, 3)
-        if op == '==' and c != v:
+        if op == '==' and current != v:
             result = False
-        elif op == '!=' and c == v:
+        elif op == '!=' and current == v:
             result = False
-        elif op in ('>=', '') and not (c >= v):  # if no constraint passed assume '>=required'
+        elif op == '>=' and not (current >= v):
             result = False
-        elif op == '<=' and not (c <= v):
+        elif op == '<=' and not (current <= v):
             result = False
-        elif op == '>' and not (c > v):
+        elif op == '>' and not (current > v):
             result = False
-        elif op == '<' and not (c < v):
+        elif op == '<' and not (current < v):
             result = False
     if not result:
         warning_message = f'WARNING ⚠️ {name}{op}{required} is required, but {name}=={current} is currently installed'
