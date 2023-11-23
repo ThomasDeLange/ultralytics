@@ -17,7 +17,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from torch import distributed as dist
+from torch import distributed as dist, Tensor
 from torch import nn, optim
 from torch.cuda import amp
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -137,10 +137,15 @@ class BaseTrainer:
         self.csv = self.save_dir / 'results.csv'
         self.plot_idx = [0, 1, 2]
 
+        self.batch: Tensor
+        self.batch_number = 0
+
         # Callbacks
         self.callbacks = _callbacks or callbacks.get_default_callbacks()
         if RANK in (-1, 0):
             callbacks.add_integration_callbacks(self)
+
+        
 
     def add_callback(self, event: str, callback):
         """
@@ -342,14 +347,33 @@ class BaseTrainer:
                         if 'momentum' in x:
                             x['momentum'] = np.interp(ni, xi, [self.args.warmup_momentum, self.args.momentum])
 
+                # Callback
                 # Forward
                 with torch.cuda.amp.autocast(self.amp):
                     batch = self.preprocess_batch(batch)
+
+                    # Add actual callback
+                    self.batch: Tensor = batch
+                    self.run_callbacks('during_training')
+                    # sys.exit(0)
+                    batch = self.batch
+
+                    # Run model with updated batch
                     self.loss, self.loss_items = self.model(batch)
+
                     if RANK != -1:
                         self.loss *= world_size
                     self.tloss = (self.tloss * i + self.loss_items) / (i + 1) if self.tloss is not None \
                         else self.loss_items
+
+                # # Forward
+                # with torch.cuda.amp.autocast(self.amp):
+                #     batch = self.preprocess_batch(batch)
+                #     self.loss, self.loss_items = self.model(batch)
+                #     if RANK != -1:
+                #         self.loss *= world_size
+                #     self.tloss = (self.tloss * i + self.loss_items) / (i + 1) if self.tloss is not None \
+                #         else self.loss_items
 
                 # Backward
                 self.scaler.scale(self.loss).backward()

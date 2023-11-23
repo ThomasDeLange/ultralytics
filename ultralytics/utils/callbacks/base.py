@@ -9,6 +9,10 @@ from copy import deepcopy
 # Trainer callbacks ----------------------------------------------------------------------------------------------------
 
 
+def during_training(trainer):
+    """Called before the pretraining routine starts."""
+    pass
+
 def on_pretrain_routine_start(trainer):
     """Called before the pretraining routine starts."""
     pass
@@ -151,6 +155,7 @@ default_callbacks = {
     'on_train_epoch_start': [on_train_epoch_start],
     'on_train_batch_start': [on_train_batch_start],
     'optimizer_step': [optimizer_step],
+    'during_training': [during_training],
     'on_before_zero_grad': [on_before_zero_grad],
     'on_train_batch_end': [on_train_batch_end],
     'on_train_epoch_end': [on_train_epoch_end],
