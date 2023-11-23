@@ -289,6 +289,7 @@ class BaseTrainer:
         self.run_callbacks('on_pretrain_routine_end')
 
     # Change - add model as parameter
+    # @profile
     def _do_train(self, model: "SegmentationModel", world_size=1):
         """Train completed, evaluate and plot if specified by arguments."""
         if world_size > 1:
@@ -349,8 +350,7 @@ class BaseTrainer:
                     # Add actual callback
                     self.batch:Tensor = batch
                     self.run_callbacks('during_training')
-                    sys.exit(0)
-
+                    # sys.exit(0)
                     batch = self.batch
 
                     # Run model with updated batch

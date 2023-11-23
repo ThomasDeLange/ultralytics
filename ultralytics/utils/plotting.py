@@ -385,8 +385,8 @@ def plot_images(images,
     if isinstance(images, torch.Tensor):
 
         # Change - add .detach()
-        # images = images.detach().cpu().float().numpy()
-        images = images.cpu().float().numpy()
+        images = images.detach().cpu().float().numpy()
+        # images = images.cpu().float().numpy()
 
     if isinstance(cls, torch.Tensor):
         cls = cls.cpu().numpy()
@@ -691,8 +691,8 @@ def feature_visualization(x, module_type, stage, n=32, save_dir=Path('runs/detec
         plt.subplots_adjust(wspace=0.05, hspace=0.05)
         for i in range(n):
             # Change - add .detach().numpy()
-            # ax[i].imshow(blocks[i].squeeze().detach().numpy())  # cmap='gray'
-            ax[i].imshow(blocks[i].squeeze())  # cmap='gray'
+            ax[i].imshow(blocks[i].squeeze().detach().numpy())  # cmap='gray'
+            # ax[i].imshow(blocks[i].squeeze())  # cmap='gray'
 
             ax[i].axis('off')
 
