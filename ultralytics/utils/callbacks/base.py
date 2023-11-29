@@ -4,6 +4,17 @@
 from collections import defaultdict
 from copy import deepcopy
 
+
+# Custom callbacks ----------------------------------------------------------------------------------------------------
+def during_training(trainer):
+    """Custom - Called during training."""
+    pass
+
+
+def during_validation(trainer):
+    """Custom - Called during validation."""
+    pass
+
 # Trainer callbacks ----------------------------------------------------------------------------------------------------
 
 
@@ -19,10 +30,6 @@ def on_pretrain_routine_end(trainer):
 
 def on_train_start(trainer):
     """Called when the training starts."""
-    pass
-
-def during_training(trainer):
-    """Custom - Called during training."""
     pass
 
 def on_train_epoch_start(trainer):
@@ -165,6 +172,7 @@ default_callbacks = {
     # Run in validator
     'on_val_start': [on_val_start],
     'on_val_batch_start': [on_val_batch_start],
+    'during_validation': [during_validation],
     'on_val_batch_end': [on_val_batch_end],
     'on_val_end': [on_val_end],
 

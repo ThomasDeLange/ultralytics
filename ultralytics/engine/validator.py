@@ -24,6 +24,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from torch import Tensor
 
 from ultralytics.cfg import get_cfg, get_save_dir
 from ultralytics.data.utils import check_cls_dataset, check_det_dataset
@@ -100,6 +101,9 @@ class BaseValidator:
         self.plots = {}
         self.callbacks = _callbacks or callbacks.get_default_callbacks()
 
+        self.batch: Tensor
+        self.model = None
+
     @smart_inference_mode()
     def __call__(self, trainer=None, model=None):
         """Supports validation of a pre-trained model if passed or a model being trained if trainer is passed (trainer
@@ -113,7 +117,6 @@ class BaseValidator:
             self.args.half = self.device.type != 'cpu'  # force FP16 val during training
             model = trainer.ema.ema or trainer.model
             model = model.half() if self.args.half else model.float()
-            # self.model = model
             self.loss = torch.zeros_like(trainer.loss_items, device=trainer.device)
             self.args.plots &= trainer.stopper.possible_stop or (trainer.epoch == trainer.epochs - 1)
             model.eval()
@@ -129,6 +132,7 @@ class BaseValidator:
             self.args.half = model.fp16  # update half
             stride, pt, jit, engine = model.stride, model.pt, model.jit, model.engine
             imgsz = check_imgsz(self.args.imgsz, stride=stride)
+
             if engine:
                 self.args.batch = model.batch_size
             elif not pt and not jit:
@@ -158,11 +162,19 @@ class BaseValidator:
         self.init_metrics(de_parallel(model))
         self.jdict = []  # empty before each val
         for batch_i, batch in enumerate(bar):
+            print(f"validating batch {batch_i}")
+
+
             self.run_callbacks('on_val_batch_start')
             self.batch_i = batch_i
             # Preprocess
             with dt[0]:
                 batch = self.preprocess(batch)
+
+            # Callback
+            # self.batch: Tensor = batch
+            # self.run_callbacks('during_validation')
+            # batch = self.batch
 
             # Inference
             with dt[1]:

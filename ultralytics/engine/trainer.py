@@ -140,7 +140,6 @@ class BaseTrainer:
         self.plot_idx = [0, 1, 2]
 
         self.batch: Tensor
-        self.batch_number = 0
 
         # Callbacks
         self.callbacks = _callbacks or callbacks.get_default_callbacks()
