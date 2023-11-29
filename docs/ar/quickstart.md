@@ -202,7 +202,7 @@ keywords: تثبيت Ultralytics, pip install Ultralytics, Docker install Ultral
     - `yolo predict model=yolov8n.pt, imgsz=640, conf=0.25`  ❌ (لا تستخدم `,`)
     - `yolo predict --model yolov8n.pt --imgsz 640 --conf 0.25`  ❌ (لا تستخدم `--`)
 
-[دليل CLI](/../usage/cli.md){ .md-button }
+[دليل CLI](/../usage/cli.md){ .md-button .md-button--primary}
 
 ## استخدم Ultralytics مع Python
 
