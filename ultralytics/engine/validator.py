@@ -102,7 +102,6 @@ class BaseValidator:
         self.callbacks = _callbacks or callbacks.get_default_callbacks()
 
         self.batch: Tensor
-        self.model = None
 
     @smart_inference_mode()
     def __call__(self, trainer=None, model=None):
@@ -115,12 +114,14 @@ class BaseValidator:
             self.device = trainer.device
             self.data = trainer.data
             self.args.half = self.device.type != 'cpu'  # force FP16 val during training
-            model = trainer.ema.ema or trainer.model
+            # model = trainer.ema.ema or trainer.model
+            model = trainer.model or trainer.ema.ema
             model = model.half() if self.args.half else model.float()
             self.loss = torch.zeros_like(trainer.loss_items, device=trainer.device)
             self.args.plots &= trainer.stopper.possible_stop or (trainer.epoch == trainer.epochs - 1)
             model.eval()
         else:
+            print("Has trainer")
             callbacks.add_integration_callbacks(self)
             model = AutoBackend(model or self.args.model,
                                 device=select_device(self.args.device, self.args.batch),
@@ -172,9 +173,9 @@ class BaseValidator:
                 batch = self.preprocess(batch)
 
             # Callback
-            # self.batch: Tensor = batch
-            # self.run_callbacks('during_validation')
-            # batch = self.batch
+            self.batch: Tensor = batch
+            self.run_callbacks('during_validation')
+            batch = self.batch
 
             # Inference
             with dt[1]:
