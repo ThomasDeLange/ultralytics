@@ -431,14 +431,10 @@ class BaseTrainer:
             if self.stop:
                 break  # must break all DDP ranks
 
-        # Here we could do some do AE validation
-        # self.metrics, self.fitness = self.validate()
-
         if RANK in (-1, 0):
             # Do final val with best.pt
             LOGGER.info(f'\n{epoch - self.start_epoch + 1} epochs completed in '
                         f'{(time.time() - self.train_time_start) / 3600:.3f} hours.')
-
             self.final_eval()
             if self.args.plots:
                 self.plot_metrics()

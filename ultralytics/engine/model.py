@@ -272,9 +272,7 @@ class Model(nn.Module):
         args = {**self.overrides, **custom, **kwargs, 'mode': 'val'}  # highest priority args on the right
 
         validator = (validator or self._smart_load('validator'))(args=args, _callbacks=self.callbacks)
-        # validator(model=self.model)
-        validator(trainer=self.trainer, model=self.model)
-
+        validator(model=self.model)
         self.metrics = validator.metrics
         return validator.metrics
 
