@@ -9,7 +9,6 @@ Usage:
 import math
 import os
 import subprocess
-import sys
 import time
 import warnings
 from copy import deepcopy
@@ -194,7 +193,7 @@ class BaseTrainer:
 
         else:
             # change - add model as arg
-            self._do_train(model, world_size)
+            self._do_train(world_size)
 
     def _setup_ddp(self, world_size):
         """Initializes and sets the DistributedDataParallel parameters for training."""
@@ -287,9 +286,9 @@ class BaseTrainer:
         self.scheduler.last_epoch = self.start_epoch - 1  # do not move
         self.run_callbacks('on_pretrain_routine_end')
 
-    # Change - add model as parameter
+    # Change - add model as parameter model: "SegmentationModel",
     # @profile
-    def _do_train(self, model: "SegmentationModel", world_size=1):
+    def _do_train(self,  world_size=1):
         """Train completed, evaluate and plot if specified by arguments."""
         if world_size > 1:
             self._setup_ddp(world_size)

@@ -34,6 +34,9 @@ from ultralytics.utils.checks import check_imgsz
 from ultralytics.utils.ops import Profile
 from ultralytics.utils.torch_utils import de_parallel, select_device, smart_inference_mode
 
+# from ultralytics.models.yolo.segment import SegmentationTrainer
+# from ultralytics.nn import SegmentationModel
+
 
 class BaseValidator:
     """
@@ -102,6 +105,10 @@ class BaseValidator:
         self.callbacks = _callbacks or callbacks.get_default_callbacks()
 
         self.batch: Tensor
+        self.val_ae = False
+
+        self.trainer: "SegmentationTrainer"
+        self.model: "SegmentationModel"
 
     @smart_inference_mode()
     def __call__(self, trainer=None, model=None):
@@ -114,21 +121,19 @@ class BaseValidator:
             self.device = trainer.device
             self.data = trainer.data
             self.args.half = self.device.type != 'cpu'  # force FP16 val during training
-            # model = trainer.ema.ema or trainer.model
-            model = trainer.model or trainer.ema.ema
+            model = trainer.ema.ema or trainer.model
+            # model = trainer.model or trainer.ema.ema
             model = model.half() if self.args.half else model.float()
             self.loss = torch.zeros_like(trainer.loss_items, device=trainer.device)
             self.args.plots &= trainer.stopper.possible_stop or (trainer.epoch == trainer.epochs - 1)
             model.eval()
         else:
-            print("Has trainer")
             callbacks.add_integration_callbacks(self)
             model = AutoBackend(model or self.args.model,
                                 device=select_device(self.args.device, self.args.batch),
                                 dnn=self.args.dnn,
                                 data=self.args.data,
                                 fp16=self.args.half)
-            # self.model = model
             self.device = model.device  # update device
             self.args.half = model.fp16  # update half
             stride, pt, jit, engine = model.stride, model.pt, model.jit, model.engine
@@ -152,10 +157,21 @@ class BaseValidator:
             if not pt:
                 self.args.rect = False
             self.stride = model.stride  # used in get_dataloader() for padding
+
             self.dataloader = self.dataloader or self.get_dataloader(self.data.get(self.args.split), self.args.batch)
 
             model.eval()
             model.warmup(imgsz=(1 if pt else self.args.batch, 3, imgsz, imgsz))  # warmup
+
+        # Prepare for being called from val()
+        if self.val_ae:
+            # New
+            # self.dataloader = trainer.get_dataloader(trainer.trainset, batch_size=16, rank=1, mode='val')
+            self.trainer = trainer
+            self.model = model
+
+            self.stride = 32
+            self.dataloader = trainer.test_loader
 
         self.run_callbacks('on_val_start')
         dt = Profile(), Profile(), Profile(), Profile()
@@ -163,9 +179,6 @@ class BaseValidator:
         self.init_metrics(de_parallel(model))
         self.jdict = []  # empty before each val
         for batch_i, batch in enumerate(bar):
-            print(f"validating batch {batch_i}")
-
-
             self.run_callbacks('on_val_batch_start')
             self.batch_i = batch_i
             # Preprocess
@@ -173,9 +186,10 @@ class BaseValidator:
                 batch = self.preprocess(batch)
 
             # Callback
-            self.batch: Tensor = batch
-            self.run_callbacks('during_validation')
-            batch = self.batch
+            if self.val_ae:
+                self.batch: Tensor = batch
+                self.run_callbacks('during_validation')
+                batch = self.batch
 
             # Inference
             with dt[1]:

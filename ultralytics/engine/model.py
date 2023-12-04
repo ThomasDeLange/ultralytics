@@ -273,6 +273,8 @@ class Model(nn.Module):
 
         validator = (validator or self._smart_load('validator'))(args=args, _callbacks=self.callbacks)
         # validator(model=self.model)
+        validator.val_ae = True
+
         validator(trainer=self.trainer, model=self.model)
 
         self.metrics = validator.metrics
