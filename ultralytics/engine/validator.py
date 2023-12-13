@@ -34,6 +34,7 @@ from ultralytics.utils.checks import check_imgsz
 from ultralytics.utils.ops import Profile
 from ultralytics.utils.torch_utils import de_parallel, select_device, smart_inference_mode
 
+
 # from ultralytics.models.yolo.segment import SegmentationTrainer
 # from ultralytics.nn import SegmentationModel
 
@@ -111,7 +112,7 @@ class BaseValidator:
         self.model: "SegmentationModel"
 
     @smart_inference_mode()
-    def __call__(self, trainer=None, model=None):
+    def __call__(self, trainer=None, model=None, validation_trainer=None):
         """Supports validation of a pre-trained model if passed or a model being trained if trainer is passed (trainer
         gets priority).
         """
@@ -121,8 +122,7 @@ class BaseValidator:
             self.device = trainer.device
             self.data = trainer.data
             self.args.half = self.device.type != 'cpu'  # force FP16 val during training
-            model = trainer.ema.ema or trainer.model
-            # model = trainer.model or trainer.ema.ema
+            model = trainer.model or trainer.ema.ema
             model = model.half() if self.args.half else model.float()
             self.loss = torch.zeros_like(trainer.loss_items, device=trainer.device)
             self.args.plots &= trainer.stopper.possible_stop or (trainer.epoch == trainer.epochs - 1)
@@ -164,14 +164,24 @@ class BaseValidator:
             model.warmup(imgsz=(1 if pt else self.args.batch, 3, imgsz, imgsz))  # warmup
 
         # Prepare for being called from val()
-        if self.val_ae:
-            # New
-            # self.dataloader = trainer.get_dataloader(trainer.trainset, batch_size=16, rank=1, mode='val')
-            self.trainer = trainer
-            self.model = model
+        if validation_trainer is not None:
+            trainer = validation_trainer
+            self.device = trainer.device
+            self.data = trainer.data
+            # self.args.half = self.device.type != 'cpu'  # force FP16 val during training
+            model = trainer.model or trainer.ema.ema
+            model = model.half() if self.args.half else model.float()
+            self.loss = torch.zeros_like(Tensor([0, 0, 0, 0]), device=trainer.device)
 
-            self.stride = 32
-            self.dataloader = trainer.test_loader
+            # Magic
+            # trainer.setup_train()
+            trainer._setup_train(1)
+            trainer.setup_model()
+            trainer.model = trainer.model.to(trainer.device)
+            trainer.set_model_attributes()
+            # end magic
+
+            model.eval()
 
         self.run_callbacks('on_val_start')
         dt = Profile(), Profile(), Profile(), Profile()
@@ -181,15 +191,38 @@ class BaseValidator:
         for batch_i, batch in enumerate(bar):
             self.run_callbacks('on_val_batch_start')
             self.batch_i = batch_i
+            trainer.batch = batch
+
             # Preprocess
             with dt[0]:
-                batch = self.preprocess(batch)
+                trainer.batch = trainer.preprocess_batch(trainer.batch)
 
-            # Callback
-            if self.val_ae:
-                self.batch: Tensor = batch
-                self.run_callbacks('during_validation')
-                batch = self.batch
+            # self.batch: Tensor = batch
+            # self.run_callbacks('during_validation')
+            # batch = self.batch
+
+            with torch.cuda.amp.autocast(trainer.amp):
+
+
+                # -- Construct AE --
+                # batch['img'].requires_grad = True
+                # model.zero_grad()
+
+                trainer.batch['img'].requires_grad = True
+                trainer.model.zero_grad()
+
+                trainer.loss, trainer.loss_items = trainer.model(trainer.batch)
+                trainer.scaler.scale(trainer.loss).backward()
+
+                grad = trainer.batch['img'].grad.data.sign()
+
+                # Restore the data to its original scale
+                batch['img'] = torch.clamp(batch['img'], min=0, max=1)
+
+                # Create the perturbed image by adjusting each pixel of the input image
+                batch['img'] = batch['img'] + 0.01 * grad
+                # Adding clipping to maintain [0,1] range
+                batch['img'] = torch.clamp(batch['img'], 0, 1)
 
             # Inference
             with dt[1]:

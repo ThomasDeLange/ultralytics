@@ -283,7 +283,7 @@ class v8SegmentationLoss(v8DetectionLoss):
 
         # Change - remove .detach() to be able to use the loss
         # return loss.sum() * batch_size, loss.detach()  # loss(box, cls, dfl)
-        return loss.sum() * batch_size, loss.detach()  # loss(box, cls, dfl)
+        return loss.sum() * batch_size, loss.detach()# loss(box, cls, dfl)
 
 
     @staticmethod
