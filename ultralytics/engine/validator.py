@@ -201,29 +201,26 @@ class BaseValidator:
             # self.run_callbacks('during_validation')
             # batch = self.batch
 
-            with torch.cuda.amp.autocast(trainer.amp):
+            # -- Construct AE --
+            # batch['img'].requires_grad = True
+            # model.zero_grad()
 
+            batch['img'].requires_grad = True
+            model.zero_grad()
 
-                # -- Construct AE --
-                # batch['img'].requires_grad = True
-                # model.zero_grad()
+            preds = model(batch['img'])
+            loss = model.loss(batch, preds)[0]
+            loss.backward()
 
-                batch['img'].requires_grad = True
-                model.zero_grad()
+            grad = batch['img'].grad.data.sign()
 
-                preds = model(batch['img'])
-                loss = model.loss(batch, preds)[0]
-                loss.backward()
+            # Restore the data to its original scale
+            batch['img'] = torch.clamp(batch['img'], min=0, max=1)
 
-                grad = batch['img'].grad.data.sign()
-
-                # Restore the data to its original scale
-                batch['img'] = torch.clamp(batch['img'], min=0, max=1)
-
-                # Create the perturbed image by adjusting each pixel of the input image
-                batch['img'] = batch['img'] + 0.01 * grad
-                # Adding clipping to maintain [0,1] range
-                batch['img'] = torch.clamp(batch['img'], 0, 1)
+            # Create the perturbed image by adjusting each pixel of the input image
+            batch['img'] = batch['img'] + 0.01 * grad
+            # Adding clipping to maintain [0,1] range
+            batch['img'] = torch.clamp(batch['img'], 0, 1)
 
             # Inference
             with dt[1]:
