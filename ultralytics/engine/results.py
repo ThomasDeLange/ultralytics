@@ -117,7 +117,8 @@ class Results(SimpleClass):
     def update(self, boxes=None, masks=None, probs=None):
         """Update the boxes, masks, and probs attributes of the Results object."""
         if boxes is not None:
-            self.boxes = Boxes(ops.clip_boxes(boxes, self.orig_shape), self.orig_shape)
+            ops.clip_boxes(boxes, self.orig_shape)  # clip boxes
+            self.boxes = Boxes(boxes, self.orig_shape)
         if masks is not None:
             self.masks = Masks(masks, self.orig_shape)
         if probs is not None:
@@ -323,7 +324,7 @@ class Results(SimpleClass):
         for d in self.boxes:
             save_one_box(d.xyxy,
                          self.orig_img.copy(),
-                         file=Path(save_dir) / self.names[int(d.cls)] / f'{Path(file_name)}.jpg',
+                         file=Path(save_dir) / self.names[int(d.cls)] / f'{Path(file_name).stem}.jpg',
                          BGR=True)
 
     def tojson(self, normalize=False):

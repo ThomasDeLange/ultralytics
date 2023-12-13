@@ -45,7 +45,6 @@ class STrack(BaseTrack):
 
     def __init__(self, tlwh, score, cls):
         """Initialize new STrack instance."""
-        super().__init__()
         self._tlwh = np.asarray(self.tlbr_to_tlwh(tlwh[:-1]), dtype=np.float32)
         self.kalman_filter = None
         self.mean, self.covariance = None, None
@@ -371,8 +370,7 @@ class BYTETracker:
         """Returns the predicted tracks using the YOLOv8 network."""
         STrack.multi_predict(tracks)
 
-    @staticmethod
-    def reset_id():
+    def reset_id(self):
         """Resets the ID counter of STrack."""
         STrack.reset_id()
 

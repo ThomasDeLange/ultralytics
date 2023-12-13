@@ -10,13 +10,13 @@ The YOLO command line interface (CLI) allows for simple single-line commands wit
 
 <p align="center">
   <br>
-  <iframe width="720" height="405" src="https://www.youtube.com/embed/GsXGnb-A4Kc?start=19"
+  <iframe width="720" height="405" src="https://www.youtube.com/embed/GsXGnb-A4Kc"
     title="YouTube video player" frameborder="0"
     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
     allowfullscreen>
   </iframe>
   <br>
-  <strong>Watch:</strong> Mastering Ultralytics YOLOv8: CLI
+  <strong>Watch:</strong> Mastering Ultralytics YOLOv8: CLI & Python Usage and Live Inference
 </p>
 
 !!! Example
