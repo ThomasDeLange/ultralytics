@@ -208,13 +208,14 @@ class BaseValidator:
                 # batch['img'].requires_grad = True
                 # model.zero_grad()
 
-                trainer.batch['img'].requires_grad = True
-                trainer.model.zero_grad()
+                batch['img'].requires_grad = True
+                model.zero_grad()
 
-                trainer.loss, trainer.loss_items = trainer.model(trainer.batch)
-                trainer.scaler.scale(trainer.loss).backward()
+                preds = model(batch['img'])
+                loss = model.loss(batch, preds)[0]
+                loss.backward()
 
-                grad = trainer.batch['img'].grad.data.sign()
+                grad = batch['img'].grad.data.sign()
 
                 # Restore the data to its original scale
                 batch['img'] = torch.clamp(batch['img'], min=0, max=1)
