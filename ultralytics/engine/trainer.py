@@ -139,6 +139,7 @@ class BaseTrainer:
         self.csv = self.save_dir / 'results.csv'
         self.plot_idx = [0, 1, 2]
 
+        # For custom callback
         self.batch: Tensor
 
         # Callbacks
@@ -347,7 +348,7 @@ class BaseTrainer:
                     batch = self.preprocess_batch(batch)
 
                     # Add actual callback
-                    self.batch:Tensor = batch
+                    self.batch: Tensor = batch
                     self.run_callbacks('during_training')
                     # sys.exit(0)
                     batch = self.batch
@@ -359,7 +360,6 @@ class BaseTrainer:
                         self.loss *= world_size
                     self.tloss = (self.tloss * i + self.loss_items) / (i + 1) if self.tloss is not None \
                         else self.loss_items
-
 
                 # # Original
                 # # Forward

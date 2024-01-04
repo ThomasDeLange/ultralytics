@@ -99,12 +99,15 @@ class BaseValidator:
         self.args.imgsz = check_imgsz(self.args.imgsz, max_dim=1)
 
         self.plots = {}
-        self.callbacks = _callbacks or callbacks.get_default_callbacks()
 
+        # For custom callback
         self.batch: Tensor
         self.model = None
+        self.loss = None
 
-    @smart_inference_mode()
+        self.callbacks = _callbacks or callbacks.get_default_callbacks()
+
+    # @smart_inference_mode()
     def __call__(self, trainer=None, model=None):
         """Supports validation of a pre-trained model if passed or a model being trained if trainer is passed (trainer
         gets priority).
@@ -161,9 +164,11 @@ class BaseValidator:
         bar = TQDM(self.dataloader, desc=self.get_desc(), total=len(self.dataloader))
         self.init_metrics(de_parallel(model))
         self.jdict = []  # empty before each val
-        for batch_i, batch in enumerate(bar):
-            print(f"validating batch {batch_i}")
 
+        self.model = model
+        # callbacks.add_integration_callbacks(self)
+        for batch_i, batch in enumerate(bar):
+            # print(f"validating batch {batch_i}")
 
             self.run_callbacks('on_val_batch_start')
             self.batch_i = batch_i
@@ -172,9 +177,32 @@ class BaseValidator:
                 batch = self.preprocess(batch)
 
             # Callback
-            # self.batch: Tensor = batch
-            # self.run_callbacks('during_validation')
-            # batch = self.batch
+            if self.training:
+                self.batch = batch
+                # Create Adversarial Examples from this batch for robustness evaluation
+                self.run_callbacks('during_validation')
+                batch = self.batch
+
+            # if self.training:
+            #     batch['img'].requires_grad = True
+            #     model.zero_grad()
+            #
+            #     loss, _ = model(batch)
+            #
+            #     # Necessary for AMP
+            #     loss.backward()
+            #
+            #     # Collect gradient sign
+            #     grad = batch['img'].grad.data.sign()
+            #
+            #     # Restore the data to its original scale
+            #     # batch['img'] = torch.clamp(batch['img'], min=0, max=1)
+            #
+            #     # Create the perturbed image by adjusting each pixel of the input image
+            #     batch['img'] = batch['img'] + 0.5 * grad
+            #§
+            #     # Adding clipping to maintain [0,1] range
+            #     batch['img'] = torch.clamp(batch['img'], 0, 1).detach()
 
             # Inference
             with dt[1]:

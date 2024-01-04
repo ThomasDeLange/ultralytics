@@ -11,7 +11,7 @@ def during_training(trainer):
     pass
 
 
-def during_validation(trainer):
+def during_validation(validator):
     """Custom - Called during validation."""
     pass
 
