@@ -103,7 +103,6 @@ class BaseValidator:
         # For custom callback
         self.batch: Tensor
         self.model = None
-        self.loss = None
 
         self.callbacks = _callbacks or callbacks.get_default_callbacks()
 
@@ -115,10 +114,12 @@ class BaseValidator:
         self.training = trainer is not None
         augment = self.args.augment and (not self.training)
         if self.training:
+            # trainer.device = torch.device('cpu')
             self.device = trainer.device
             self.data = trainer.data
             self.args.half = self.device.type != 'cpu'  # force FP16 val during training
             model = trainer.ema.ema or trainer.model
+            # model.to('cpu')
             model = model.half() if self.args.half else model.float()
             self.loss = torch.zeros_like(trainer.loss_items, device=trainer.device)
             self.args.plots &= trainer.stopper.possible_stop or (trainer.epoch == trainer.epochs - 1)
