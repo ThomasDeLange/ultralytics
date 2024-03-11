@@ -137,6 +137,7 @@ class BaseTrainer:
         self.tloss = None
         self.loss_names = ['Loss']
         self.csv = self.save_dir / 'results.csv'
+        # Change - extra train samples
         self.plot_idx = [0, 1, 2]
 
         # For custom callback
@@ -161,7 +162,7 @@ class BaseTrainer:
             callback(self)
 
     # Change - add model as param
-    def train(self, model):
+    def train(self):
         """Allow device='', device=None on Multi-GPU systems to default to device=0."""
         if isinstance(self.args.device, str) and len(self.args.device):  # i.e. device='0' or device='0,1,2,3'
             world_size = len(self.args.device.split(','))
@@ -195,7 +196,7 @@ class BaseTrainer:
 
         else:
             # change - add model as arg
-            self._do_train(model, world_size)
+            self._do_train(world_size)
 
     def _setup_ddp(self, world_size):
         """Initializes and sets the DistributedDataParallel parameters for training."""
@@ -290,7 +291,7 @@ class BaseTrainer:
 
     # Change - add model as parameter
     # @profile
-    def _do_train(self, model: "SegmentationModel", world_size=1):
+    def _do_train(self, world_size=1):
         """Train completed, evaluate and plot if specified by arguments."""
         if world_size > 1:
             self._setup_ddp(world_size)

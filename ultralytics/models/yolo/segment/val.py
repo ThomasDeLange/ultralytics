@@ -66,8 +66,8 @@ class SegmentationValidator(DetectionValidator):
                                     multi_label=True,
                                     agnostic=self.args.single_cls,
                                     # max_det=self.args.max_det,
-                                    # Change set max_det to be lower to facillitate adversarial robustness validation
-                                    max_det=100,
+                                    # Change set max_det to be lower to facilitate adversarial robustness validation
+                                    # max_det=100,
                                     nc=self.nc)
         proto = preds[1][-1] if len(preds[1]) == 3 else preds[1]  # second output is len 3 if pt, but only 1 if exported
         return p, proto
