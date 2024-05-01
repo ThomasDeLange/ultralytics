@@ -350,8 +350,13 @@ class BaseTrainer:
 
                     # Add actual callback
                     self.batch: Tensor = batch
+                    self.epoch = epoch
+                    self.batch_i = i
+
                     self.run_callbacks('during_training')
-                    # sys.exit(0)
+                    # For outputting distributions
+                    # if i >= 4:
+                    #     sys.exit(0)
                     batch = self.batch
 
                     # Run model with updated batch
